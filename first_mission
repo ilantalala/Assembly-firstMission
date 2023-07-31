@@ -1,0 +1,112 @@
+.data
+id:.quad 123456788
+
+.section	.rodata			#read only data section
+format1:	.string	"%d\n"
+format2: .string "False\n"
+format3: .string "True\n"
+
+.text
+.global main
+EX1:
+  pushq	%rbp		#save the old frame pointer
+    movq	%rsp, %rbp	#create the new frame pointer
+    movq $format1,%rdi   #pass the format argument to %rdi
+    movq id,%rsi         #pass the id to the first argument.
+    call printf
+    movq	%rbp, %rsp	#restore the old stack pointer - release all used memory.
+    popq	%rbp		#restore old frame pointer (the caller function frame)
+    ret
+EX2:
+    pushq	%rbp		#save the old frame pointer
+    movq	 %rsp, %rbp	#create the new frame pointer
+    movq $format1,%rdi
+    movq $id,%rax
+    movsbq 1(%rax),%rsi
+    testq $1,%rsi
+    je .EVEN
+    jne .ODD
+    .EVEN:
+     movq $3,%rcx
+     movq id,%rax
+     cqto
+     idivq %rcx
+    movq %rdx,%rsi
+      call printf
+      movq	%rbp, %rsp	#restore the old stack pointer - release all used memory.
+     popq	%rbp		#restore old frame pointer (the caller function frame)
+    ret
+
+    .ODD:
+     movq id,%rsi
+     movq $3,%rax
+     imul %rax,%rsi
+     call printf
+     movq	%rbp, %rsp	#restore the old stack pointer - release all used memory.
+    popq	%rbp		#restore old frame pointer (the caller function frame)
+    ret
+EX3:
+    pushq	%rbp		#save the old frame pointer
+    movq	 %rsp, %rbp
+    movq $id,%rax
+    movzbq 2(%rax),%rcx
+    movzbq 0(%rax),%rbx
+    xorq %rbx,%rcx
+    movq %rcx,%rsi
+
+    cmp $127,%rsi
+   jl .GREATER
+   movq $format3,%rdi
+    call printf
+    movq	%rbp, %rsp	#restore the old stack pointer - release all used memory.
+    popq	%rbp		#restore old frame pointer (the caller function frame)
+    ret
+    .GREATER:
+    movq $format2,%rdi
+    call printf
+    movq	%rbp, %rsp	#restore the old stack pointer - release all used memory.
+    popq	%rbp		#restore old frame pointer (the caller function frame)
+    ret
+EX4:
+    pushq	%rbp		#save the old frame pointer
+   movq %rsp, %rbp #for correct debugging
+    movq	%rsp, %rbp	#create the new frame pointer
+    movq $id,%rsi   #save the id value.
+    movq $0,%rax
+    movzbq 3(%rsi),%rax #receive the fourth byte.
+    movq $8,%rdx    #%rdx save how many times the loop is going to run.
+    movq $0,%rcx    #%rcx is counter for the number of one`s.
+
+
+    .CTRLOOP:
+    cmp $0, %rdx #check if the loop need to stop.
+    je .ENDCTRLOOP #if the %rdx is negative, so the loop need to stop.
+    movq %rax, %r10 #%r10 will save the current byte.
+    and $1,%r10 #if there is 1 at the right bit of %r10 then put 1 in r10, else put 0.
+    cmp $0, %r10 #if %r10 equals 0 then jump to NOINC, else increase %rcx by 1.
+    je .NOINC
+    inc %rcx #increase the counter by 1.
+    .NOINC:
+     decq %rdx  #decrease the number %rdx by 1.
+     sarq $1,%rax #shift the byte to right, one step.
+     jmp .CTRLOOP  #return to the start of CTRLOOP lable.
+    .ENDCTRLOOP:
+
+    movq %rcx,%rsi
+    movq $format1,%rdi
+    call printf
+    movq %rbp, %rsp	#restore the old stack pointer - release all used memory.
+    popq	 %rbp		#restore old frame pointer (the caller function frame)
+    ret
+
+main:
+
+    pushq	%rbp		#save the old frame pointer
+    movq	%rsp, %rbp	#create the new frame pointer
+    call EX1
+    call EX2
+    call EX3
+    call EX4
+    movq	 %rbp, %rsp	#restore the old stack pointer - release all used memory.
+    popq	 %rbp		#restore old frame pointer (the caller function frame)
+    ret
